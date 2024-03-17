@@ -1,0 +1,30 @@
+name: Test
+
+on:
+  push:
+    branches:
+    - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: checkout
+      uses: actions/checkout@v4
+    - name: Cache Tests
+      id: cache-tests
+      uses: actions/cache@v4
+      with:
+        path: tests
+        key: tests
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+    - uses: goto-bus-stop/setup-zig@v2
+      with:
+        version: 0.11.0
+    - run: pip install pcpp pycparser
+    - run: zig build judge --verbose --summary all
+    - run: python3 -m doctest cmin.py
+    - run: zig fmt --check .
+    - run: python3 -m doctest cast.py

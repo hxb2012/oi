@@ -1,0 +1,5 @@
+*~
+*.c
+tests/
+zig-cache/
+__pycache__/
