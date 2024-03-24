@@ -634,7 +634,7 @@ pub fn sprintf(str: []u8, comptime fmt: [:0]const u8, args: anytype) c_int {
     return @call(.auto, c.snprintf, .{ str.ptr, str.len, spec.fmt } ++ printTuple(spec.args, args));
 }
 
-pub fn printf(comptime fmt: [:0]const u8, args: anytype) c_int {
+pub inline fn printf(comptime fmt: [:0]const u8, args: anytype) c_int {
     const spec = comptime printFmt(fmt, @TypeOf(args));
     return @call(.auto, std.c.printf, .{spec.fmt} ++ printTuple(spec.args, args));
 }
@@ -1004,7 +1004,7 @@ pub fn sscanf(str: [:0]const u8, comptime fmt: [:0]const u8, args: anytype) c_in
     return @call(.auto, c.sscanf, .{ str, spec.fmt } ++ scanTuple(spec.args, args));
 }
 
-pub fn scanf(comptime fmt: [:0]const u8, args: anytype) c_int {
+pub inline fn scanf(comptime fmt: [:0]const u8, args: anytype) c_int {
     const spec = comptime scanFmt(fmt, @TypeOf(args));
     return @call(.auto, c.scanf, .{spec.fmt} ++ scanTuple(spec.args, args));
 }
