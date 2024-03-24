@@ -1,5 +1,5 @@
-const std = @import("std");
+const oi = @import("oi");
 
 pub fn main() !void {
-    _ = std.c.printf("Hello World\n");
+    _ = oi.printf("Hello World\n");
 }

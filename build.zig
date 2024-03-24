@@ -1,6 +1,6 @@
 const std = @import("std");
 
-fn addTranslate(b: *std.Build, path: []const u8, target: std.zig.CrossTarget) !*std.Build.Step.Compile {
+fn addTranslate(b: *std.Build, path: []const u8, target: std.zig.CrossTarget, module: *std.Build.Module) !*std.Build.Step.Compile {
     const basename = std.fs.path.stem(path);
     const translate = b.addStaticLibrary(.{
         .name = basename,
@@ -10,7 +10,8 @@ fn addTranslate(b: *std.Build, path: []const u8, target: std.zig.CrossTarget) !*
         .link_libc = true,
         .single_threaded = true,
     });
-    const mod = b.createModule(.{ .source_file = .{ .path = path } });
+
+    const mod = b.createModule(.{ .source_file = .{ .path = path }, .dependencies = &[_]std.Build.ModuleDependency{.{ .name = "oi", .module = module }} });
     translate.addModule("answer", mod);
     return translate;
 }
@@ -22,7 +23,7 @@ fn addCmin(b: *std.Build, cross_target: std.zig.CrossTarget) !*std.Build.Step.Ru
     return cmin;
 }
 
-fn addFile(b: *std.Build, path: []const u8, cross_target: std.zig.CrossTarget, no_judge: bool, translate: bool) !*std.Build.Step {
+fn addFile(b: *std.Build, path: []const u8, cross_target: std.zig.CrossTarget, no_judge: bool, translate: bool, module: *std.Build.Module) !*std.Build.Step {
     const sub_dir = std.fs.path.dirname(path).?;
     const basename = std.fs.path.stem(path);
 
@@ -32,15 +33,16 @@ fn addFile(b: *std.Build, path: []const u8, cross_target: std.zig.CrossTarget, n
         .link_libc = true,
         .single_threaded = true,
     });
+    zig_compile.addModule("oi", module);
 
-    const native_translate = try addTranslate(b, path, .{ .ofmt = .c });
+    const native_translate = try addTranslate(b, path, .{ .ofmt = .c }, module);
     const c_path = try std.fs.path.join(b.allocator, &.{ sub_dir, native_translate.out_filename });
     const native_cmin = try addCmin(b, .{ .ofmt = .c });
     native_cmin.addFileArg(native_translate.getEmittedBin());
     native_cmin.addArg(c_path);
     b.getInstallStep().dependOn(&native_cmin.step);
 
-    const cross_translate = try addTranslate(b, path, cross_target);
+    const cross_translate = try addTranslate(b, path, cross_target, module);
     const cross_cmin = try addCmin(b, cross_target);
     cross_cmin.addFileArg(cross_translate.getEmittedBin());
 
@@ -89,7 +91,7 @@ fn addFile(b: *std.Build, path: []const u8, cross_target: std.zig.CrossTarget, n
     return judge_step;
 }
 
-fn addSubdir(b: *std.Build, path: []const u8, target: std.zig.CrossTarget, no_judge: bool, translate: bool) !*std.Build.Step {
+fn addSubdir(b: *std.Build, path: []const u8, target: std.zig.CrossTarget, no_judge: bool, translate: bool, module: *std.Build.Module) !*std.Build.Step {
     var dir = try std.fs.cwd().openIterableDir(path, .{ .no_follow = true });
     defer dir.close();
 
@@ -99,13 +101,13 @@ fn addSubdir(b: *std.Build, path: []const u8, target: std.zig.CrossTarget, no_ju
         switch (entry.kind) {
             .directory => {
                 const sub_path = try std.fs.path.join(b.allocator, &.{ path, entry.name });
-                const subdir_step = try addSubdir(b, sub_path, target, no_judge, translate);
+                const subdir_step = try addSubdir(b, sub_path, target, no_judge, translate, module);
                 step.dependOn(subdir_step);
             },
             .file => {
                 if (std.mem.eql(u8, std.fs.path.extension(entry.name), ".zig")) {
                     const sub_path = try std.fs.path.join(b.allocator, &.{ path, entry.name });
-                    const file_step = try addFile(b, sub_path, target, no_judge, translate);
+                    const file_step = try addFile(b, sub_path, target, no_judge, translate, module);
                     step.dependOn(file_step);
                 }
             },
@@ -116,16 +118,18 @@ fn addSubdir(b: *std.Build, path: []const u8, target: std.zig.CrossTarget, no_ju
     return step;
 }
 
-fn addDirectory(b: *std.Build, dirname: []const u8, target: std.zig.CrossTarget, no_judge: bool, translate: bool) !*std.Build.Step {
+fn addDirectory(b: *std.Build, dirname: []const u8, target: std.zig.CrossTarget, no_judge: bool, translate: bool, module: *std.Build.Module) !*std.Build.Step {
     var c_target: std.zig.CrossTarget = target;
     c_target.ofmt = .c;
-    return try addSubdir(b, dirname, c_target, no_judge, translate);
+    return try addSubdir(b, dirname, c_target, no_judge, translate, module);
 }
 
 pub fn build(b: *std.Build) !void {
     const translate = b.option(bool, "translate", "Translate to C") orelse false;
     const no_judge = b.option(bool, "no-judge", "Disable judge") orelse false;
 
+    const module = b.addModule("oi", .{ .source_file = .{ .path = "src/main.zig" } });
+
     const step = b.step("judge", "Judge all");
-    step.dependOn(try addDirectory(b, "AOJ", .{ .cpu_arch = .x86_64, .os_tag = .linux }, no_judge, translate));
+    step.dependOn(try addDirectory(b, "AOJ", .{ .cpu_arch = .x86_64, .os_tag = .linux }, no_judge, translate, module));
 }
