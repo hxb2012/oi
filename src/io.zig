@@ -970,6 +970,8 @@ fn scanArgField(comptime spec: ScanArgSpec, comptime name: []const u8, comptime 
 }
 
 inline fn scanArgValue(comptime spec: ScanArgSpec, value: anytype) scanArgType(spec) {
+    if (@TypeOf(value) == scanArgType(spec))
+        return value;
     return @ptrCast(value);
 }
 
