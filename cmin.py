@@ -232,12 +232,14 @@ def encode_symbol(n):
         high = n//52
         if high == 0:
             h = ''
-        else:
+        elif high < 27:
             h = chr(0x40+high)
-        if low < 26:
-            l = chr(0x41 + n)
         else:
-            l = chr(0x61 + n - 26)
+            h = chr(0x60 + high - 26)
+        if low < 26:
+            l = chr(0x41 + low)
+        else:
+            l = chr(0x61 + low - 26)
         return h + l
     assert False, "Too many symbols"
 
