@@ -19,6 +19,7 @@ def splitpath(path):
 TERMINATED = "..... (terminated because of the limitation)\n"
 
 def _fetch(path, filename):
+    print("fetch testcase of", path)
     parts = splitpath(path)
     assert parts[0] == 'AOJ'
     pid = parts[-1]
