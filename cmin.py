@@ -45,6 +45,12 @@ class CGenerator(c_generator.CGenerator):
                                   for decl in n.decls[1:])
         return s
 
+    def visit_ExprList(self, n):
+        visited_subexprs = []
+        for expr in n.exprs:
+            visited_subexprs.append(self._visit_expr(expr))
+        return ', '.join(str(e) for e in visited_subexprs)
+
 
 class StructDeclarationRewriter(BaseVisitor):
 
