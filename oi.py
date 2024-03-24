@@ -82,7 +82,7 @@ def judge(path, kcov, bin, *testcases):
             if kcov:
                 dirname = os.path.join(kcov, basename)
                 os.makedirs(dirname, exist_ok=True)
-                command = ['kcov', "--exclude-path=/opt", dirname] + command
+                command = ['kcov', "--exclude-path=/opt,/usr", dirname] + command
 
             stdout = run(command, input=input, capture_output=True, check=True).stdout
             if output == stdout:

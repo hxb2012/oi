@@ -159,7 +159,7 @@ pub fn build(b: *std.Build) !void {
         .single_threaded = true,
     });
 
-    const run_test_kcov = b.addSystemCommand(&.{ "kcov", "--exclude-path=/opt", coverage });
+    const run_test_kcov = b.addSystemCommand(&.{ "kcov", "--exclude-path=/opt,/usr", coverage });
     run_test_kcov.addFileArg(run_test.getEmittedBin());
 
     const test_step = b.step("test", "Test");
