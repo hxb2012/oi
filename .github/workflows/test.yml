@@ -14,7 +14,7 @@ jobs:
       id: cache-tests
       uses: actions/cache@v4
       with:
-        path: tests
+        path: tests/**/*.zip
         key: tests
     - uses: actions/setup-python@v5
       with:
