@@ -66,7 +66,7 @@ fn addFile(b: *std.Build, path: []const u8, cross_target: std.zig.CrossTarget, o
 
     const c_judge = b.addSystemCommand(&.{ "python3", "oi.py", "judge" });
     c_judge.addPrefixedFileArg("--bin=", c_compile.getEmittedBin());
-    c_judge.addArg(path);
+    c_judge.addArg(c_path);
 
     if (options.translate) {
         const zig_step = b.step(path, "Translate file");
