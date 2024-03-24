@@ -1,0 +1,48 @@
+#+TITLE: AIZU ONLINE JUDGE
+
+* [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/all][ITP1]]
+
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_1_A][ITP1_1_A]]  | [[file:ITP1/ITP1_1_A.zig][Hello World]]                  |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_1_B][ITP1_1_B]]  | [[file:ITP1/ITP1_1_B.zig][X Cubic]]                      |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_1_C][ITP1_1_C]]  | [[file:ITP1/ITP1_1_C.zig][Rectangle]]                    |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_1_D][ITP1_1_D]]  | [[file:ITP1/ITP1_1_D.zig][Watch]]                        |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_2_A][ITP1_2_A]]  | Small, Large, or Equal       |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_2_B][ITP1_2_B]]  | Range                        |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_2_C][ITP1_2_C]]  | Sorting Three Numbers        |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_2_D][ITP1_2_D]]  | Circle in a Rectangle        |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_3_A][ITP1_3_A]]  | Print Many Hello World       |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_3_B][ITP1_3_B]]  | Print Test Cases             |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_3_C][ITP1_3_C]]  | Swapping Two Numbers         |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_3_D][ITP1_3_D]]  | How Many Divisors?           |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_4_A][ITP1_4_A]]  | A / B Problem                |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_4_B][ITP1_4_B]]  | Circle                       |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_4_C][ITP1_4_C]]  | Simple Calculator            |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_4_D][ITP1_4_D]]  | Min, Max and Sum             |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_5_A][ITP1_5_A]]  | Print a Rectangle            |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_5_B][ITP1_5_B]]  | Print a Frame                |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_5_C][ITP1_5_C]]  | Print a Chessboard           |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_5_D][ITP1_5_D]]  | Structured Programming       |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_6_A][ITP1_6_A]]  | Reversing Numbers            |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_6_B][ITP1_6_B]]  | Finding Missing Cards        |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_6_C][ITP1_6_C]]  | Official House               |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_6_D][ITP1_6_D]]  | Matrix Vector Multiplication |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_7_A][ITP1_7_A]]  | Grading                      |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_7_B][ITP1_7_B]]  | How many ways?               |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_7_C][ITP1_7_C]]  | Spreadsheet                  |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_7_D][ITP1_7_D]]  | Matrix Multiplication        |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_8_A][ITP1_8_A]]  | Toggling Cases               |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_8_B][ITP1_8_B]]  | Sum of Numbers               |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_8_C][ITP1_8_C]]  | Counting Characters          |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_8_D][ITP1_8_D]]  | Ring                         |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_9_A][ITP1_9_A]]  | Finding a Word               |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_9_B][ITP1_9_B]]  | Shuffle                      |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_9_C][ITP1_9_C]]  | Card Game                    |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_9_D][ITP1_9_D]]  | Transformation               |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_10_A][ITP1_10_A]] | Distance                     |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_10_B][ITP1_10_B]] | Triangle                     |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_10_C][ITP1_10_C]] | Standard Deviation           |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_10_D][ITP1_10_D]] | Distance II                  |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_11_A][ITP1_11_A]] | Dice I                       |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_11_B][ITP1_11_B]] | Dice II                      |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_11_C][ITP1_11_C]] | Dice III                     |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_11_D][ITP1_11_D]] | Dice IV                      |
