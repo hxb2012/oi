@@ -24,7 +24,7 @@ jobs:
       with:
         version: 0.11.0
     - run: pip install pcpp pycparser
-    - run: zig build judge --verbose --summary all
+    - run: zig build test --verbose --summary all
     - run: python3 -m doctest cmin.py
     - run: zig fmt --check .
     - run: python3 -m doctest cast.py

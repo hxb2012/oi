@@ -130,6 +130,15 @@ pub fn build(b: *std.Build) !void {
 
     const module = b.addModule("oi", .{ .source_file = .{ .path = "src/main.zig" } });
 
-    const step = b.step("judge", "Judge all");
-    step.dependOn(try addDirectory(b, "AOJ", .{ .cpu_arch = .x86_64, .os_tag = .linux }, no_judge, translate, module));
+    const judge_step = b.step("judge", "Judge all");
+    judge_step.dependOn(try addDirectory(b, "AOJ", .{ .cpu_arch = .x86_64, .os_tag = .linux }, no_judge, translate, module));
+
+    const run_test = b.addTest(.{
+        .root_source_file = .{ .path = "src/main.zig" },
+        .link_libc = true,
+        .single_threaded = true,
+    });
+    const test_step = b.step("test", "Test");
+    test_step.dependOn(&run_test.step);
+    test_step.dependOn(judge_step);
 }
