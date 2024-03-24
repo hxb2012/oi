@@ -9,8 +9,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - name: checkout
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
     - name: Cache Tests
       id: cache-tests
       uses: actions/cache@v4
@@ -23,8 +22,11 @@ jobs:
     - uses: goto-bus-stop/setup-zig@v2
       with:
         version: 0.11.0
+    - run: sudo apt-get install kcov
     - run: pip install pcpp pycparser
-    - run: zig build test --verbose --summary all
+    - run: mkdir -p coverage
+    - run: zig build test -Dkcov --verbose --summary all
     - run: python3 -m doctest cmin.py
     - run: zig fmt --check .
     - run: python3 -m doctest cast.py
+    - uses: coverallsapp/github-action@v2

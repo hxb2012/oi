@@ -21,7 +21,7 @@ TERMINATED = "..... (terminated because of the limitation)\n"
 def _fetch(path, filename):
     parts = splitpath(path)
     assert parts[0] == 'AOJ'
-    pid = os.path.splitext(parts[-1])[0]
+    pid = parts[-1]
     if os.environ.get('GITHUB_ACTIONS', 'false') == 'true':
         pass
 
@@ -63,11 +63,13 @@ def list_testcases(path):
         for item in _list_testcases(f):
             print(item)
 
-def judge(path, bin, *testcases):
+def judge(path, kcov, bin, *testcases):
     assert bin is not None
     error = False
     print("judging", path)
-    with fetch(path) as f:
+    basename = os.path.splitext(path)[0]
+
+    with fetch(basename) as f:
         if not testcases:
             testcases = tuple(_list_testcases(f))
         for item in testcases:
@@ -76,7 +78,13 @@ def judge(path, bin, *testcases):
             with f.open(f"{item}/out") as b:
                 output = b.read()
 
-            stdout = run([bin], input=input, capture_output=True, check=True).stdout
+            command = [bin]
+            if kcov:
+                dirname = os.path.join(kcov, basename)
+                os.makedirs(dirname, exist_ok=True)
+                command = ['kcov', "--exclude-path=/opt", dirname] + command
+
+            stdout = run(command, input=input, capture_output=True, check=True).stdout
             if output == stdout:
                 print("[AC]", item)
             else:
@@ -96,6 +104,7 @@ def main():
     subparser.add_argument('path')
 
     subparser = subparsers.add_parser('judge')
+    subparser.add_argument('--kcov')
     subparser.add_argument('--bin')
     subparser.add_argument('path')
     subparser.add_argument('testcases', nargs='*')
@@ -106,7 +115,7 @@ def main():
     elif args.command == 'list':
         list_testcases(args.path)
     elif args.command == 'judge':
-        judge(args.path, args.bin, *args.testcases)
+        judge(args.path, args.kcov, args.bin, *args.testcases)
     else:
         parser.print_help()
 

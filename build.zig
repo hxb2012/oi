@@ -3,6 +3,7 @@ const std = @import("std");
 const Options = struct {
     no_judge: bool,
     translate: bool,
+    kcov: ?[]const u8,
     module: *std.Build.Module,
 };
 
@@ -61,6 +62,10 @@ fn addFile(b: *std.Build, path: []const u8, cross_target: std.zig.CrossTarget, o
     c_compile.addCSourceFile(.{ .file = .{ .path = c_path }, .flags = &[_][]const u8{ "-Wall", "-Wextra" } });
 
     const zig_judge = b.addSystemCommand(&.{ "python3", "oi.py", "judge" });
+    if (options.kcov) |coverage| {
+        zig_judge.addArg("--kcov");
+        zig_judge.addArg(coverage);
+    }
     zig_judge.addPrefixedFileArg("--bin=", zig_compile.getEmittedBin());
     zig_judge.addArg(path);
 
@@ -133,11 +138,15 @@ fn addDirectory(b: *std.Build, dirname: []const u8, target: std.zig.CrossTarget,
 pub fn build(b: *std.Build) !void {
     const translate = b.option(bool, "translate", "Translate to C") orelse false;
     const no_judge = b.option(bool, "no-judge", "Disable judge") orelse false;
+    const kcov = b.option(bool, "kcov", "run Kcov") orelse false;
     const module = b.addModule("oi", .{ .source_file = .{ .path = "src/main.zig" } });
+
+    const coverage: []const u8 = "coverage";
 
     const options: Options = .{
         .translate = translate,
         .no_judge = no_judge,
+        .kcov = if (kcov) coverage else null,
         .module = module,
     };
 
@@ -149,7 +158,16 @@ pub fn build(b: *std.Build) !void {
         .link_libc = true,
         .single_threaded = true,
     });
+
+    const run_test_kcov = b.addSystemCommand(&.{ "kcov", "--exclude-path=/opt", coverage });
+    run_test_kcov.addFileArg(run_test.getEmittedBin());
+
     const test_step = b.step("test", "Test");
-    test_step.dependOn(&run_test.step);
+    if (kcov) {
+        test_step.dependOn(&run_test_kcov.step);
+    } else {
+        test_step.dependOn(&run_test.step);
+    }
+
     test_step.dependOn(judge_step);
 }
