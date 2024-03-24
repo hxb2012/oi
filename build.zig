@@ -154,7 +154,7 @@ pub fn build(b: *std.Build) !void {
     judge_step.dependOn(try addDirectory(b, "AOJ", .{ .cpu_arch = .x86_64, .os_tag = .linux }, &options));
 
     const run_test = b.addTest(.{
-        .root_source_file = .{ .path = "src/main.zig" },
+        .root_source_file = .{ .path = "tests.zig" },
         .link_libc = true,
         .single_threaded = true,
     });
