@@ -295,6 +295,13 @@ class Counters(NamedTuple):
     union: Any
     enum: Any
 
+C_HEADERS = {
+    "printf": "stdio.h",
+    "snprintf": "stdio.h",
+    "scanf": "stdio.h",
+    "sscanf": "stdio.h",
+}
+
 class SymbolRenamer(BaseVisitor):
 
     def __init__(self):
@@ -382,6 +389,7 @@ class SymbolRenamer(BaseVisitor):
         declare = []
         reference = []
         next_value = []
+        include = set()
 
         with self.enter_child_scope():
             for d in node.ext:
@@ -426,17 +434,46 @@ class SymbolRenamer(BaseVisitor):
                         queue.append(x)
                         visited.add(x)
 
-            visited = list(visited)
-            visited.sort()
-            node.ext = [node.ext[i] for i in visited]
+            for i in range(len(node.ext)):
+                if i in visited:
+                    continue
+                node.ext[i] = None
 
-            declare = [declare[i] for i in visited]
-            next_value = [next_value[i] for i in visited]
+
+            for name, decl in self.tables.decl_types.table.items():
+                if not isinstance(decl, FuncDecl):
+                    continue
+                if name in self.tables.decl_inits.table:
+                    continue
+                if not isinstance(name, str):
+                    continue
+
+                i = declare_map[field_decl_types][name]
+                d = node.ext[i]
+                if "extern" not in d.storage:
+                    continue
+
+                header = C_HEADERS.get(name, None)
+                if header is None:
+                    continue
+
+                node.ext[i] = None
+                include.add(header)
+
+            next_value = [ next_value[i]
+                           for i, n in enumerate(node.ext)
+                           if n is not None]
             next_value = tuple(map(max, zip(*next_value)))
             counters = Counters(Counter(), Counter(), Counter(), Counter())
 
             for v, c in zip(next_value, counters):
                 c.next_value = v
+
+            declare = [ declare[i]
+                        for i, n in enumerate(node.ext)
+                        if n is not None]
+
+            node.ext = [n for n in node.ext if n is not None]
 
             field_typedefs = Tables._fields.index("typedefs")
 
@@ -466,6 +503,8 @@ class SymbolRenamer(BaseVisitor):
                     for c in d[f]:
                         s = getattr(self.tables, n)[c]
                         s.name = counter.get()
+
+        return include
 
 
     def visit_Decl(self, node):
@@ -1207,13 +1246,22 @@ def rename_ids(s):
     <BLANKLINE>
     }
     <BLANKLINE>
+    >>> rename_ids('extern int printf(const char *, ...); int main() { printf("OK"); }')
+    #include <stdio.h>
+    int main()
+    {
+      printf("OK");
+    }
+    <BLANKLINE>
     """
     parser = CParser()
     ast = parser.parse(s)
     StructDeclarationRewriter().visit(ast)
-    SymbolRenamer().visit(ast)
+    headers = SymbolRenamer().visit(ast)
     generator = CGenerator()
-    print(generator.visit(ast), end='')
+    ccode = generator.visit(ast)
+    ccode = "".join(f"#include <{h}>\n" for h in headers) + ccode
+    print(ccode, end='')
 
 def define_inttypes(bits):
     names = ['char', 'short', 'int', 'long', 'longlong']
@@ -1263,9 +1311,10 @@ def main(bits, input, output=None):
     parser = CParser()
     ast = parser.parse(buf.getvalue(), input)
     StructDeclarationRewriter().visit(ast)
-    SymbolRenamer().visit(ast)
+    headers = SymbolRenamer().visit(ast)
     generator = CGenerator(reduce_parentheses=True)
     ccode = generator.visit(ast)
+    ccode = "".join(f"#include <{h}>\n" for h in headers) + ccode
 
     if output is None:
         print(ccode)
