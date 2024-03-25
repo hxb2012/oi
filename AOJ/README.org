@@ -6,8 +6,8 @@
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_1_B][ITP1_1_B]]  | [[file:ITP1/ITP1_1_B.zig][X Cubic]]                      |
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_1_C][ITP1_1_C]]  | [[file:ITP1/ITP1_1_C.zig][Rectangle]]                    |
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_1_D][ITP1_1_D]]  | [[file:ITP1/ITP1_1_D.zig][Watch]]                        |
-| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_2_A][ITP1_2_A]]  | [[file:ITP1/ITP1_2_A.zig][Small, Large, or Equal]] |
-| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_2_B][ITP1_2_B]]  | Range                        |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_2_A][ITP1_2_A]]  | [[file:ITP1/ITP1_2_A.zig][Small, Large, or Equal]]       |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_2_B][ITP1_2_B]]  | [[file:ITP1/ITP1_2_B.zig][Range]]                        |
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_2_C][ITP1_2_C]]  | Sorting Three Numbers        |
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_2_D][ITP1_2_D]]  | Circle in a Rectangle        |
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_3_A][ITP1_3_A]]  | Print Many Hello World       |
