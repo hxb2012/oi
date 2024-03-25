@@ -300,6 +300,7 @@ C_HEADERS = {
     "snprintf": "stdio.h",
     "scanf": "stdio.h",
     "sscanf": "stdio.h",
+    "abort": "stdlib.h",
 }
 
 class SymbolRenamer(BaseVisitor):
@@ -450,6 +451,8 @@ class SymbolRenamer(BaseVisitor):
 
                 i = declare_map[field_decl_types][name]
                 d = node.ext[i]
+                if d is None:
+                    continue
                 if "extern" not in d.storage:
                     continue
 
