@@ -301,6 +301,7 @@ class SymbolRenamer(BaseVisitor):
         super().__init__()
         self.tables = Tables()
         self.counters = None
+        self.global_counters = None
 
     @contextmanager
     def enter_child_scope(self):
@@ -319,9 +320,12 @@ class SymbolRenamer(BaseVisitor):
     def record(self):
         for table in self.tables:
             table.table = RecordingTable(table.table)
+        counters = self.global_counters
+        self.global_counters = Counters(Counter(), Counter(), Counter(), Counter())
         try:
             yield
         finally:
+            self.global_counters = counters
             for table in self.tables:
                 table.table = table.table.table
 
@@ -375,10 +379,9 @@ class SymbolRenamer(BaseVisitor):
 
 
     def visit_FileAST(self, node):
-        self.global_counters = Counters(Counter(), Counter(), Counter(), Counter())
-
         declare = []
         reference = []
+        next_value = []
 
         with self.enter_child_scope():
             for d in node.ext:
@@ -387,6 +390,7 @@ class SymbolRenamer(BaseVisitor):
 
                     declare.append(tuple(table.table.declare for table in self.tables))
                     reference.append(tuple(table.table.reference for table in self.tables))
+                    next_value.append(tuple(c.next_value for c in self.global_counters))
 
             declare_map = [{c:i
                             for i, s in enumerate(t)
@@ -427,11 +431,18 @@ class SymbolRenamer(BaseVisitor):
             node.ext = [node.ext[i] for i in visited]
 
             declare = [declare[i] for i in visited]
+            next_value = [next_value[i] for i in visited]
+            next_value = tuple(map(max, zip(*next_value)))
+            counters = Counters(Counter(), Counter(), Counter(), Counter())
+
+            for v, c in zip(next_value, counters):
+                c.next_value = v
+
             field_typedefs = Tables._fields.index("typedefs")
 
             names = ["struct_names", "union_names", "enum_names"]
             name_fields = [Tables._fields.index(f) for f in names]
-            name_counters =  [getattr(self.global_counters, f)
+            name_counters =  [getattr(counters, f)
                               for f in ["struct", "union", "enum"]]
 
             for d in declare:
@@ -440,16 +451,16 @@ class SymbolRenamer(BaseVisitor):
                         continue
                     t = self.tables.decl_types[c]
                     if isinstance(t, Enum):
-                        self.tables.decl_inits[c].name.name = self.global_counters.decl.get()
+                        self.tables.decl_inits[c].name.name = counters.decl.get()
                     else:
                         decl = self.get_typedecl(t)
                         if isinstance(decl.declname, Symbol):
-                            decl.declname.name = self.global_counters.decl.get()
+                            decl.declname.name = counters.decl.get()
 
                 for c in d[field_typedefs]:
                     t = self.tables.typedefs[c]
                     decl = self.get_typedecl(t)
-                    decl.declname.name = self.global_counters.decl.get()
+                    decl.declname.name = counters.decl.get()
 
                 for n, f, counter in zip(names, name_fields, name_counters):
                     for c in d[f]:
