@@ -474,6 +474,14 @@ class SymbolRenamer(BaseVisitor):
                         if n is not None]
 
             node.ext = [n for n in node.ext if n is not None]
+            for d in node.ext:
+                if isinstance(d, FuncDef):
+                    d = d.decl
+                elif not isinstance(d, Decl):
+                    continue
+
+                if d.storage:
+                    d.storage = []
 
             field_typedefs = Tables._fields.index("typedefs")
 
