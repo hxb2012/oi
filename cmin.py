@@ -406,6 +406,10 @@ class SymbolRenamer(BaseVisitor):
                             for c in s}
                            for t in zip(*declare)]
 
+            composite = ["struct", "union", "enum"]
+            decl_fields = [Tables._fields.index(f"{f}_decls") for f in composite]
+            name_fields = [Tables._fields.index(f"{f}_names") for f in composite]
+
             field_decl_types = Tables._fields.index("decl_types")
             field_decl_inits = Tables._fields.index("decl_inits")
 
@@ -429,6 +433,16 @@ class SymbolRenamer(BaseVisitor):
                 if init != n and init not in visited:
                     queue.append(init)
                     visited.add(init)
+
+                for d, i in zip(decl_fields, name_fields):
+                    for name in declare[n][i] | reference[n][i]:
+                        x = declare_map[d].get(name, None)
+                        if x is None:
+                            continue
+                        if x in visited:
+                            continue
+                        queue.append(x)
+                        visited.add(x)
 
                 for x in reference_set[n]:
                     if x not in visited:
@@ -471,9 +485,6 @@ class SymbolRenamer(BaseVisitor):
 
             for v, c in zip(next_value, counters):
                 c.next_value = v
-
-            composite = ["struct", "union", "enum"]
-            decl_fields = [Tables._fields.index(f"{f}_decls") for f in composite]
 
             init_merged = []
             for k, v in init_map.items():
@@ -529,7 +540,6 @@ class SymbolRenamer(BaseVisitor):
                     d.storage = []
 
             field_typedefs = Tables._fields.index("typedefs")
-            name_fields = [Tables._fields.index(f"{f}_names") for f in composite]
             name_counters =  [getattr(counters, f) for f in composite]
 
             for d in declare:
@@ -1347,6 +1357,17 @@ def rename_ids(s):
       int A;
     } *A()
     {
+    }
+    <BLANKLINE>
+    >>> rename_ids('typedef struct S S; struct S { int x; }; int main() { S a; }')
+    typedef struct A B;
+    struct A
+    {
+      int A;
+    };
+    int main()
+    {
+      B A;
     }
     <BLANKLINE>
     """
