@@ -472,6 +472,48 @@ class SymbolRenamer(BaseVisitor):
             for v, c in zip(next_value, counters):
                 c.next_value = v
 
+            composite = ["struct", "union", "enum"]
+            decl_fields = [Tables._fields.index(f"{f}_decls") for f in composite]
+
+            init_merged = []
+            for k, v in init_map.items():
+                if node.ext[k] is None:
+                    continue
+
+                if k == v:
+                    continue
+                if any(r > k for r in reference_set[v]):
+                    continue
+
+                if any(declare[v][i] for i in decl_fields):
+                    continue
+
+                init_merged.append(k)
+                decl = node.ext[k]
+                init = node.ext[v]
+                if isinstance(init, FuncDef):
+                    init.decl.type.type = decl.type.type
+                    node.ext[k] = init
+                else:
+                    decl.init = init.init
+
+                for d, i in zip(declare[k], declare[v]):
+                    d.update(i)
+                    i.clear()
+
+                for d, i in zip(reference[k], reference[v]):
+                    d.update(i)
+                    i.clear()
+
+                reference_set[k].update(reference_set[v])
+                reference_set[v].clear()
+
+                node.ext[v] = None
+
+            for k in init_merged:
+                init_map[k] = k
+
+
             declare = [ declare[i]
                         for i, n in enumerate(node.ext)
                         if n is not None]
@@ -487,11 +529,8 @@ class SymbolRenamer(BaseVisitor):
                     d.storage = []
 
             field_typedefs = Tables._fields.index("typedefs")
-
-            names = ["struct_names", "union_names", "enum_names"]
-            name_fields = [Tables._fields.index(f) for f in names]
-            name_counters =  [getattr(counters, f)
-                              for f in ["struct", "union", "enum"]]
+            name_fields = [Tables._fields.index(f"{f}_names") for f in composite]
+            name_counters =  [getattr(counters, f) for f in composite]
 
             for d in declare:
                 for c in d[field_decl_types]:
@@ -510,9 +549,9 @@ class SymbolRenamer(BaseVisitor):
                     decl = self.get_typedecl(t)
                     decl.declname.name = counters.decl.get()
 
-                for n, f, counter in zip(names, name_fields, name_counters):
+                for n, f, counter in zip(composite, name_fields, name_counters):
                     for c in d[f]:
-                        s = getattr(self.tables, n)[c]
+                        s = getattr(self.tables, f"{n}_names")[c]
                         s.name = counter.get()
 
         return include
@@ -972,13 +1011,12 @@ def rename_ids(s):
     }
     <BLANKLINE>
     >>> rename_ids('int a; int main(){ return a; } int a = 1;')
-    int A;
+    int A = 1;
     int main()
     {
       return A;
     }
     <BLANKLINE>
-    int A = 1;
     >>> rename_ids('int a; int main(){ int a; return a; }')
     int main()
     {
@@ -987,14 +1025,13 @@ def rename_ids(s):
     }
     <BLANKLINE>
     >>> rename_ids('void f(); int main(){ f; } void f() {}')
-    void A();
+    void A()
+    {
+    }
+    <BLANKLINE>
     int main()
     {
       A;
-    }
-    <BLANKLINE>
-    void A()
-    {
     }
     <BLANKLINE>
     >>> rename_ids('typedef int t; int main(){ t a; }')
@@ -1262,6 +1299,54 @@ def rename_ids(s):
     int main()
     {
       printf("OK");
+    }
+    <BLANKLINE>
+    >>> rename_ids('struct S { int x; } a; int main() { a; } struct S a = { .x = 1 };')
+    struct A
+    {
+      int A;
+    } A = {.A = 1};
+    int main()
+    {
+      A;
+    }
+    <BLANKLINE>
+    >>> rename_ids('struct S a; int main() { a; } struct S { int x; } a = { .x = 1 };')
+    struct A A;
+    int main()
+    {
+      A;
+    }
+    <BLANKLINE>
+    struct A
+    {
+      int A;
+    } A = {.A = 1};
+    >>> rename_ids('struct S { int x; } *f(); int main() { f(); } struct S *f() {}')
+    struct A
+    {
+      int A;
+    } *A()
+    {
+    }
+    <BLANKLINE>
+    int main()
+    {
+      A();
+    }
+    <BLANKLINE>
+    >>> rename_ids('struct S *f(); int main() { f(); } struct S { int x; } *f() {}')
+    struct A *A();
+    int main()
+    {
+      A();
+    }
+    <BLANKLINE>
+    struct A
+    {
+      int A;
+    } *A()
+    {
     }
     <BLANKLINE>
     """
