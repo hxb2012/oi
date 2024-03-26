@@ -578,10 +578,24 @@ class SymbolRenamer(BaseVisitor):
             for k in init_merged:
                 init_map[k] = k
 
-
             declare = [ declare[i]
                         for i, n in enumerate(node.ext)
                         if n is not None]
+
+            reference = [ reference[i]
+                          for i, n in enumerate(node.ext)
+                          if n is not None]
+
+            declare_map = [{c:i
+                            for i, s in enumerate(t)
+                            for c in s}
+                           for t in zip(*declare)]
+
+            reference_map = [
+                {k: {i for i,s in enumerate(t) if k in s and i != v}
+                 for k, v in d.items()}
+                for d, t in zip(declare_map, zip(*reference))
+            ]
 
             node.ext = [n for n in node.ext if n is not None]
             for d in node.ext:
@@ -614,8 +628,12 @@ class SymbolRenamer(BaseVisitor):
 
                 for n, f, counter in zip(composite, name_fields, name_counters):
                     for c in d[f]:
-                        s = getattr(self.tables, f"{n}_names")[c]
-                        s.name = counter.get()
+                        if reference_map[f][c]:
+                            s = getattr(self.tables, f"{n}_names")[c]
+                            s.name = counter.get()
+                        else:
+                            s = getattr(self.tables, f"{n}_decls")[c]
+                            s.name = None
 
         return include
 
@@ -1161,7 +1179,7 @@ def rename_ids(s):
     }
     <BLANKLINE>
     >>> rename_ids('enum E { X }; int main(){ X; }')
-    enum A
+    enum 
     {
       A
     };
@@ -1365,7 +1383,7 @@ def rename_ids(s):
     }
     <BLANKLINE>
     >>> rename_ids('struct S { int x; } a; int main() { a; } struct S a = { .x = 1 };')
-    struct A
+    struct 
     {
       int A;
     } A = {.A = 1};
@@ -1386,7 +1404,7 @@ def rename_ids(s):
       int A;
     } A = {.A = 1};
     >>> rename_ids('struct S { int x; } *f(); int main() { f(); } struct S *f() {}')
-    struct A
+    struct 
     {
       int A;
     } *A()
@@ -1413,7 +1431,7 @@ def rename_ids(s):
     }
     <BLANKLINE>
     >>> rename_ids('typedef struct S T; struct S { int x; }; int main() { T a; }')
-    typedef struct A
+    typedef struct 
     {
       int A;
     } B;
