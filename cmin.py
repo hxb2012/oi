@@ -410,6 +410,60 @@ class SymbolRenamer(BaseVisitor):
             decl_fields = [Tables._fields.index(f"{f}_decls") for f in composite]
             name_fields = [Tables._fields.index(f"{f}_names") for f in composite]
 
+            reference_set = [
+                { declare_map[i][c]
+                  for i, s in enumerate(t)
+                  for c in s }
+                for t in reference]
+
+            field_typedefs = Tables._fields.index("typedefs")
+            for x in declare_map[field_typedefs].values():
+                t = node.ext[x].type.type
+                if isinstance(t, Struct):
+                    if t.decls is not None:
+                        continue
+                    f = decl_fields[0]
+                    expect = Struct
+                elif isinstance(t, Union):
+                    if t.decls is not None:
+                        continue
+                    f = decl_fields[1]
+                    expect = Union
+                elif isinstance(t, Enum):
+                    if t.values is not None:
+                        continue
+                    f = decl_fields[2]
+                    expect = Enum
+                else:
+                    continue
+
+                y = declare_map[f][t.name.orig_name]
+                if y < x:
+                    continue
+
+                decl = node.ext[y]
+                if decl.name is not None:
+                    continue
+                if not isinstance(decl.type, expect):
+                    continue
+                if decl.type.name is not t.name:
+                    continue
+                if any(r > x for r in reference_set[y]):
+                    continue
+
+                for d, i in zip(declare[x], declare[y]):
+                    d.update(i)
+                    i.clear()
+
+                for d, i in zip(reference[x], reference[y]):
+                    d.update(i)
+                    i.clear()
+
+                node.ext[x].type.type = decl.type
+                decl.type = t
+                declare_map[f][t.name.orig_name] = x
+
+
             field_decl_types = Tables._fields.index("decl_types")
             field_decl_inits = Tables._fields.index("decl_inits")
 
@@ -539,7 +593,6 @@ class SymbolRenamer(BaseVisitor):
                 if d.storage:
                     d.storage = []
 
-            field_typedefs = Tables._fields.index("typedefs")
             name_counters =  [getattr(counters, f) for f in composite]
 
             for d in declare:
@@ -1359,12 +1412,11 @@ def rename_ids(s):
     {
     }
     <BLANKLINE>
-    >>> rename_ids('typedef struct S S; struct S { int x; }; int main() { S a; }')
-    typedef struct A B;
-    struct A
+    >>> rename_ids('typedef struct S T; struct S { int x; }; int main() { T a; }')
+    typedef struct A
     {
       int A;
-    };
+    } B;
     int main()
     {
       B A;
