@@ -1,5 +1,6 @@
 const std = @import("std");
 const RemoveFile = @import("build/RemoveFile.zig");
+const MakeDir = @import("build/MakeDir.zig");
 
 const Options = struct {
     no_judge: bool,
@@ -162,8 +163,10 @@ pub fn build(b: *std.Build) !void {
         .single_threaded = true,
     });
 
+    const makecoverage = MakeDir.create(b, coverage);
     const run_test_kcov = b.addSystemCommand(&.{ "kcov", "--exclude-path=/opt,/usr", coverage });
     run_test_kcov.addFileArg(run_test.getEmittedBin());
+    run_test_kcov.step.dependOn(&makecoverage.step);
 
     const test_step = b.step("test", "Test");
     if (kcov) {
