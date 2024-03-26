@@ -1,4 +1,5 @@
 const std = @import("std");
+const RemoveFile = @import("build/RemoveFile.zig");
 
 const Options = struct {
     no_judge: bool,
@@ -48,6 +49,8 @@ fn addFile(b: *std.Build, path: []const u8, cross_target: std.zig.CrossTarget, o
     native_cmin.addFileArg(native_translate.getEmittedBin());
     native_cmin.addArg(c_path);
     b.getInstallStep().dependOn(&native_cmin.step);
+    const remove_c = RemoveFile.create(b, c_path);
+    b.getUninstallStep().dependOn(&remove_c.step);
 
     const cross_translate = try addTranslate(b, path, cross_target, options.module);
     const cross_cmin = try addCmin(b, cross_target);
