@@ -177,3 +177,5 @@ pub fn build(b: *std.Build) !void {
 
     test_step.dependOn(judge_step);
 }
+
+pub const main = @import("build/main.zig").main;

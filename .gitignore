@@ -3,3 +3,4 @@
 tests/
 zig-cache/
 __pycache__/
+build_runner.zig*

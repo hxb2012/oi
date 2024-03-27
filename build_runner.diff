@@ -1,0 +1,32 @@
+--- build_runner.zig.orig
++++ build_runner.zig
+@@ -438,6 +438,10 @@
+     var compile_error_steps: std.ArrayListUnmanaged(*Step) = .{};
+     defer compile_error_steps.deinit(gpa);
+
++    step_stack.clearRetainingCapacity();
++    for (starting_steps) |s|
++        try collectDynamicDependencies(b, s, &step_stack);
++
+     for (step_stack.keys()) |s| {
+         test_fail_count += s.test_results.fail_count;
+         test_skip_count += s.test_results.skip_count;
+@@ -769,6 +773,18 @@
+     }
+ }
+ 
++fn collectDynamicDependencies(
++    b: *std.Build,
++    s: *Step,
++    step_stack: *std.AutoArrayHashMapUnmanaged(*Step, void),
++) !void {
++    if (!step_stack.contains(s))
++        return;
++    try step_stack.put(b.allocator, s, {});
++    for (s.dependencies.items) |dep|
++        try collectDynamicDependencies(b, dep, step_stack);
++}
++
+ fn workerMakeOneStep(
+     wg: *std.Thread.WaitGroup,
+     thread_pool: *std.Thread.Pool,
