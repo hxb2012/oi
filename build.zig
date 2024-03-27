@@ -1,6 +1,8 @@
 const std = @import("std");
 const RemoveFile = @import("build/RemoveFile.zig");
 const MakeDir = @import("build/MakeDir.zig");
+const NoOp = @import("build/NoOp.zig");
+const JudgeFile = @import("build/JudgeFile.zig");
 
 const Options = struct {
     no_judge: bool,
@@ -22,13 +24,14 @@ fn addTranslate(b: *std.Build, path: []const u8, target: std.zig.CrossTarget, mo
 
     const mod = b.createModule(.{ .source_file = .{ .path = path }, .dependencies = &[_]std.Build.ModuleDependency{.{ .name = "oi", .module = module }} });
     translate.addModule("answer", mod);
+    translate.step.name = b.fmt("Translate {s}", .{path});
     return translate;
 }
 
 fn addCmin(b: *std.Build, cross_target: std.zig.CrossTarget) !*std.Build.Step.Run {
     const target = cross_target.toTarget();
     const cmin = b.addSystemCommand(&.{ "python3", "cmin.py" });
-    cmin.addArg(try std.fmt.allocPrint(b.allocator, "{},{},{},{},{},{}", .{ target.c_type_bit_size(.char), target.c_type_bit_size(.short), target.c_type_bit_size(.int), target.c_type_bit_size(.long), target.c_type_bit_size(.longlong), target.ptrBitWidth() }));
+    cmin.addArg(b.fmt("{},{},{},{},{},{}", .{ target.c_type_bit_size(.char), target.c_type_bit_size(.short), target.c_type_bit_size(.int), target.c_type_bit_size(.long), target.c_type_bit_size(.longlong), target.ptrBitWidth() }));
     return cmin;
 }
 
@@ -43,12 +46,15 @@ fn addFile(b: *std.Build, path: []const u8, cross_target: std.zig.CrossTarget, o
         .single_threaded = true,
     });
     zig_compile.addModule("oi", options.module);
+    zig_compile.step.name = b.fmt("Compile {s}", .{path});
 
     const native_translate = try addTranslate(b, path, .{ .ofmt = .c }, options.module);
     const c_path = try std.fs.path.join(b.allocator, &.{ sub_dir, native_translate.out_filename });
     const native_cmin = try addCmin(b, .{ .ofmt = .c });
     native_cmin.addFileArg(native_translate.getEmittedBin());
     native_cmin.addArg(c_path);
+    native_cmin.step.name = b.fmt("Minify {s}", .{c_path});
+
     b.getInstallStep().dependOn(&native_cmin.step);
     const remove_c = RemoveFile.create(b, c_path);
     b.getUninstallStep().dependOn(&remove_c.step);
@@ -64,18 +70,13 @@ fn addFile(b: *std.Build, path: []const u8, cross_target: std.zig.CrossTarget, o
     });
     c_compile.step.dependOn(&native_cmin.step);
     c_compile.addCSourceFile(.{ .file = .{ .path = c_path }, .flags = &[_][]const u8{ "-Wall", "-Wextra" } });
+    c_compile.step.name = b.fmt("Compile {s}", .{c_path});
 
-    const zig_judge = b.addSystemCommand(&.{ "python3", "oi.py", "judge" });
-    if (options.kcov) |coverage| {
-        zig_judge.addArg("--kcov");
-        zig_judge.addArg(coverage);
-    }
-    zig_judge.addPrefixedFileArg("--bin=", zig_compile.getEmittedBin());
-    zig_judge.addArg(path);
+    const fetch = b.addSystemCommand(&.{ "python3", "oi.py", "fetch", path });
+    fetch.step.name = "fetch testcase";
 
-    const c_judge = b.addSystemCommand(&.{ "python3", "oi.py", "judge" });
-    c_judge.addPrefixedFileArg("--bin=", c_compile.getEmittedBin());
-    c_judge.addArg(c_path);
+    const zig_judge = JudgeFile.create(b, path, zig_compile.getEmittedBin(), options.kcov, &fetch.step);
+    const c_judge = JudgeFile.create(b, c_path, c_compile.getEmittedBin(), null, &fetch.step);
 
     if (options.translate) {
         const zig_step = b.step(path, "Translate file");
@@ -99,7 +100,7 @@ fn addFile(b: *std.Build, path: []const u8, cross_target: std.zig.CrossTarget, o
     }
 
     const basepath = try std.fs.path.join(b.allocator, &.{ sub_dir, basename });
-    const judge_step = b.step(basepath, "Judge answer");
+    const judge_step = NoOp.create(b, basepath);
     judge_step.dependOn(&zig_judge.step);
     judge_step.dependOn(&c_judge.step);
 

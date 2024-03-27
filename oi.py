@@ -3,8 +3,7 @@
 import os
 from urllib.request import urlopen
 import json
-from tempfile import NamedTemporaryFile
-from zipfile import ZipFile
+from tempfile import TemporaryDirectory
 from shutil import move
 from subprocess import run
 
@@ -19,79 +18,61 @@ def splitpath(path):
 TERMINATED = "..... (terminated because of the limitation)\n"
 
 def _fetch(path, filename):
-    print("fetch testcase of", path)
     parts = splitpath(path)
     assert parts[0] == 'AOJ'
     pid = parts[-1]
-    if os.environ.get('GITHUB_ACTIONS', 'false') == 'true':
-        pass
 
-    f = NamedTemporaryFile(prefix="oi", suffix="zip", delete=False)
-    try:
-        with ZipFile(f, 'w') as zf:
-            for item in json.load(urlopen(f"https://judgedat.u-aizu.ac.jp/testcases/{pid}/header"))["headers"]:
-                data = json.load(urlopen(f"https://judgedat.u-aizu.ac.jp/testcases/{pid}/{item['serial']}"))
-                if any(data[key].endswith("..... (terminated because of the limitation)\n")
-                       for key in ("in","out")):
-                    continue
-
-                zf.mkdir(item['name'])
-                for key in ("in", "out"):
-                    with zf.open(f"{item['name']}/{key}", "w") as b:
-                        b.write(data[key].encode())
-        zf.close()
+    with TemporaryDirectory(prefix="oi") as d:
+        for item in json.load(urlopen(f"https://judgedat.u-aizu.ac.jp/testcases/{pid}/header"))["headers"]:
+            data = json.load(urlopen(f"https://judgedat.u-aizu.ac.jp/testcases/{pid}/{item['serial']}"))
+            if any(data[key].endswith("..... (terminated because of the limitation)\n")
+                   for key in ("in","out")):
+                continue
+            os.mkdir(os.path.join(d, item['name']))
+            for key in ("in", "out"):
+                with open(os.path.join(d, item['name'], key), "w") as b:
+                    b.write(data[key])
         os.makedirs(os.path.dirname(filename), exist_ok=True)
-        move(f.name, filename)
-    except:
-        os.unlink(f.name)
-        raise
+        move(d, filename)
 
 def fetch(path):
-    filename = os.path.splitext(os.path.join("tests", path))[0] + ".zip"
-    try:
-        return ZipFile(filename)
-    except FileNotFoundError:
+    path = os.path.splitext(path)[0]
+    filename = os.path.join("tests", path)
+    if not os.path.exists(filename):
         _fetch(path, filename)
-        return ZipFile(filename)
+    return filename
 
-def _list_testcases(f):
-    for name in f.namelist():
-        if name.endswith("/"):
-            yield name[:-1]
+def _list_testcases(path):
+    for d in os.listdir(path):
+        if os.path.isdir(os.path.join(path, d)):
+            yield d
 
 def list_testcases(path):
-    with fetch(path) as f:
-        for item in _list_testcases(f):
-            print(item)
+    fetch(path)
+    path = os.path.splitext(path)[0]
+    filename = os.path.join("tests", path)
+    for item in _list_testcases(filename):
+        print(item)
 
-def judge(path, kcov, bin, *testcases):
+def judge(path, kcov, bin, testcase):
     assert bin is not None
-    error = False
-    print("judging", path)
-    basename = os.path.splitext(path)[0]
+    path = os.path.splitext(path)[0]
 
-    with fetch(basename) as f:
-        if not testcases:
-            testcases = tuple(_list_testcases(f))
-        for item in testcases:
-            with f.open(f"{item}/in") as b:
-                input = b.read()
-            with f.open(f"{item}/out") as b:
-                output = b.read()
+    filename = os.path.join("tests", path, testcase)
+    with open(os.path.join(filename, "in"), "rb") as b:
+        input = b.read()
+    with open(os.path.join(filename, "out"), "rb") as b:
+        output = b.read()
 
-            command = [bin]
-            if kcov:
-                dirname = os.path.join(kcov, basename, item)
-                os.makedirs(dirname, exist_ok=True)
-                command = ['kcov', "--exclude-path=/opt,/usr", dirname] + command
+    command = [bin]
+    if kcov:
+        dirname = os.path.join(kcov, path, testcase)
+        os.makedirs(dirname, exist_ok=True)
+        command = ['kcov', "--exclude-path=/opt,/usr", dirname] + command
 
-            stdout = run(command, input=input, capture_output=True, check=True).stdout
-            if output == stdout:
-                print("[AC]", item)
-            else:
-                print("[WA]", item)
-                error = True
-    assert not error, f"{path} failed"
+    stdout = run(command, input=input, capture_output=True, check=True).stdout
+    if output != stdout:
+        quit(1)
 
 def main():
     import argparse
@@ -108,7 +89,7 @@ def main():
     subparser.add_argument('--kcov')
     subparser.add_argument('--bin')
     subparser.add_argument('path')
-    subparser.add_argument('testcases', nargs='*')
+    subparser.add_argument('testcase')
 
     args = parser.parse_args()
     if args.command == 'fetch':
@@ -116,7 +97,7 @@ def main():
     elif args.command == 'list':
         list_testcases(args.path)
     elif args.command == 'judge':
-        judge(args.path, args.kcov, args.bin, *args.testcases)
+        judge(args.path, args.kcov, args.bin, args.testcase)
     else:
         parser.print_help()
 
