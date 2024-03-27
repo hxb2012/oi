@@ -1,5 +1,4 @@
 const std = @import("std");
-const NoOp = @import("NoOp.zig");
 const Step = std.Build.Step;
 const JudgeFile = @This();
 
@@ -11,10 +10,10 @@ path: []const u8,
 bin_path: std.Build.LazyPath,
 kcov: ?[]const u8,
 
-pub fn create(owner: *std.Build, path: []const u8, bin_path: std.Build.LazyPath, kcov: ?[]const u8, fetch: *Step) *JudgeFile {
-    const self = owner.allocator.create(JudgeFile) catch @panic("OOM");
+pub fn create(owner: *std.Build, path: []const u8, bin_path: std.Build.LazyPath, kcov: ?[]const u8, fetch: *Step) !*JudgeFile {
+    const self = try owner.allocator.create(JudgeFile);
     self.* = JudgeFile{
-        .step = NoOp.init(owner, owner.fmt("Judge {s}", .{path})),
+        .step = Step.init(.{ .id = base_id, .name = owner.fmt("Judge {s}", .{path}), .owner = owner }),
         .add_step = Step.init(.{ .id = base_id, .name = "Add cases", .owner = owner, .makeFn = make }),
         .path = owner.dupePath(path),
         .bin_path = bin_path.dupe(owner),
@@ -50,13 +49,13 @@ fn make(step: *Step, prog_node: *std.Progress.Node) !void {
     const b = step.owner;
     const self = @fieldParentPtr(JudgeFile, "add_step", step);
 
-    var tests = try std.fs.cwd().openDir("tests", .{ .no_follow = true });
+    var tests = try std.fs.cwd().openDir("tests", .{});
     defer tests.close();
 
-    var subdir = try tests.openDir(std.fs.path.dirname(self.path).?, .{ .no_follow = true });
+    var subdir = try tests.openDir(std.fs.path.dirname(self.path).?, .{});
     defer subdir.close();
 
-    var dir = try subdir.openIterableDir(std.fs.path.stem(self.path), .{ .no_follow = true });
+    var dir = try subdir.openIterableDir(std.fs.path.stem(self.path), .{});
     var it = dir.iterate();
     while (try it.next()) |entry| {
         switch (entry.kind) {

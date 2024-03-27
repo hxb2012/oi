@@ -1,7 +1,6 @@
 const std = @import("std");
 const RemoveFile = @import("build/RemoveFile.zig");
-const MakeDir = @import("build/MakeDir.zig");
-const NoOp = @import("build/NoOp.zig");
+const MakePath = @import("build/MakePath.zig");
 const JudgeFile = @import("build/JudgeFile.zig");
 
 const Options = struct {
@@ -9,6 +8,15 @@ const Options = struct {
     translate: bool,
     kcov: ?[]const u8,
     module: *std.Build.Module,
+};
+
+const Config = struct {
+    name: []const u8,
+    target: std.zig.CrossTarget,
+};
+
+const OnlineJudge = struct {
+    target: std.zig.CrossTarget,
 };
 
 fn addTranslate(b: *std.Build, path: []const u8, target: std.zig.CrossTarget, module: *std.Build.Module) !*std.Build.Step.Compile {
@@ -35,7 +43,7 @@ fn addCmin(b: *std.Build, cross_target: std.zig.CrossTarget) !*std.Build.Step.Ru
     return cmin;
 }
 
-fn addFile(b: *std.Build, path: []const u8, cross_target: std.zig.CrossTarget, options: *const Options) !*std.Build.Step {
+fn addFile(b: *std.Build, path: []const u8, config: *const OnlineJudge, options: *const Options) !*std.Build.Step {
     const sub_dir = std.fs.path.dirname(path).?;
     const basename = std.fs.path.stem(path);
 
@@ -56,11 +64,11 @@ fn addFile(b: *std.Build, path: []const u8, cross_target: std.zig.CrossTarget, o
     native_cmin.step.name = b.fmt("Minify {s}", .{c_path});
 
     b.getInstallStep().dependOn(&native_cmin.step);
-    const remove_c = RemoveFile.create(b, c_path);
+    const remove_c = try RemoveFile.create(b, c_path);
     b.getUninstallStep().dependOn(&remove_c.step);
 
-    const cross_translate = try addTranslate(b, path, cross_target, options.module);
-    const cross_cmin = try addCmin(b, cross_target);
+    const cross_translate = try addTranslate(b, path, config.target, options.module);
+    const cross_cmin = try addCmin(b, config.target);
     cross_cmin.addFileArg(cross_translate.getEmittedBin());
 
     const c_compile = b.addExecutable(.{
@@ -75,8 +83,8 @@ fn addFile(b: *std.Build, path: []const u8, cross_target: std.zig.CrossTarget, o
     const fetch = b.addSystemCommand(&.{ "python3", "oi.py", "fetch", path });
     fetch.step.name = "fetch testcase";
 
-    const zig_judge = JudgeFile.create(b, path, zig_compile.getEmittedBin(), options.kcov, &fetch.step);
-    const c_judge = JudgeFile.create(b, c_path, c_compile.getEmittedBin(), null, &fetch.step);
+    const zig_judge = try JudgeFile.create(b, path, zig_compile.getEmittedBin(), options.kcov, &fetch.step);
+    const c_judge = try JudgeFile.create(b, c_path, c_compile.getEmittedBin(), null, &fetch.step);
 
     if (options.translate) {
         const zig_step = b.step(path, "Translate file");
@@ -100,15 +108,16 @@ fn addFile(b: *std.Build, path: []const u8, cross_target: std.zig.CrossTarget, o
     }
 
     const basepath = try std.fs.path.join(b.allocator, &.{ sub_dir, basename });
-    const judge_step = NoOp.create(b, basepath);
+    const judge_step = try b.allocator.create(std.Build.Step);
+    judge_step.* = std.Build.Step.init(.{ .id = .custom, .name = basepath, .owner = b });
     judge_step.dependOn(&zig_judge.step);
     judge_step.dependOn(&c_judge.step);
 
     return judge_step;
 }
 
-fn addSubdir(b: *std.Build, path: []const u8, target: std.zig.CrossTarget, options: *const Options) !*std.Build.Step {
-    var dir = try std.fs.cwd().openIterableDir(path, .{ .no_follow = true });
+fn addSubdir(b: *std.Build, path: []const u8, config: *const OnlineJudge, options: *const Options) !*std.Build.Step {
+    var dir = try std.fs.cwd().openIterableDir(path, .{});
     defer dir.close();
 
     var it = dir.iterate();
@@ -117,13 +126,13 @@ fn addSubdir(b: *std.Build, path: []const u8, target: std.zig.CrossTarget, optio
         switch (entry.kind) {
             .directory => {
                 const sub_path = try std.fs.path.join(b.allocator, &.{ path, entry.name });
-                const subdir_step = try addSubdir(b, sub_path, target, options);
+                const subdir_step = try addSubdir(b, sub_path, config, options);
                 step.dependOn(subdir_step);
             },
             .file => {
                 if (std.mem.eql(u8, std.fs.path.extension(entry.name), ".zig")) {
                     const sub_path = try std.fs.path.join(b.allocator, &.{ path, entry.name });
-                    const file_step = try addFile(b, sub_path, target, options);
+                    const file_step = try addFile(b, sub_path, config, options);
                     step.dependOn(file_step);
                 }
             },
@@ -134,10 +143,12 @@ fn addSubdir(b: *std.Build, path: []const u8, target: std.zig.CrossTarget, optio
     return step;
 }
 
-fn addDirectory(b: *std.Build, dirname: []const u8, target: std.zig.CrossTarget, options: *const Options) !*std.Build.Step {
-    var c_target: std.zig.CrossTarget = target;
-    c_target.ofmt = .c;
-    return try addSubdir(b, dirname, c_target, options);
+fn addConfig(b: *std.Build, config: *const Config, options: *const Options) !*std.Build.Step {
+    var online_judge: OnlineJudge = .{
+        .target = config.target,
+    };
+    online_judge.target.ofmt = .c;
+    return try addSubdir(b, config.name, &online_judge, options);
 }
 
 pub fn build(b: *std.Build) !void {
@@ -156,7 +167,13 @@ pub fn build(b: *std.Build) !void {
     };
 
     const judge_step = b.step("judge", "Judge all");
-    judge_step.dependOn(try addDirectory(b, "AOJ", .{ .cpu_arch = .x86_64, .os_tag = .linux }, &options));
+    const configs = [_]Config{.{
+        .name = "AOJ",
+        .target = .{ .cpu_arch = .x86_64, .os_tag = .linux },
+    }};
+
+    for (configs) |config|
+        judge_step.dependOn(try addConfig(b, &config, &options));
 
     const run_test = b.addTest(.{
         .root_source_file = .{ .path = "tests.zig" },
@@ -164,7 +181,7 @@ pub fn build(b: *std.Build) !void {
         .single_threaded = true,
     });
 
-    const makecoverage = MakeDir.create(b, coverage);
+    const makecoverage = try MakePath.create(b, coverage);
     const run_test_kcov = b.addSystemCommand(&.{ "kcov", "--exclude-path=/opt,/usr", coverage });
     run_test_kcov.addFileArg(run_test.getEmittedBin());
     run_test_kcov.step.dependOn(&makecoverage.step);

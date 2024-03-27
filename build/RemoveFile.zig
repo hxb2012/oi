@@ -7,8 +7,8 @@ const base_id: Step.Id = .custom;
 step: Step,
 file_path: []const u8,
 
-pub fn create(owner: *std.Build, file_path: []const u8) *RemoveFile {
-    const self = owner.allocator.create(RemoveFile) catch @panic("OOM");
+pub fn create(owner: *std.Build, file_path: []const u8) !*RemoveFile {
+    const self = try owner.allocator.create(RemoveFile);
     self.* = RemoveFile{
         .step = Step.init(.{
             .id = base_id,
