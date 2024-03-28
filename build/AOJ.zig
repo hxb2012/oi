@@ -59,6 +59,9 @@ const FetchCase = struct {
 
     fn fetch(step: *Step, node: *std.Progress.Node) !void {
         _ = node;
+        var timer = try std.time.Timer.start();
+        defer step.step.result_duration_ns = timer.read();
+
         const b = step.step.owner;
         const self = @fieldParentPtr(FetchCase, "step", step);
 
@@ -89,6 +92,9 @@ const FetchCase = struct {
 
 fn fetchList(step: *Step, node: *std.Progress.Node) !void {
     _ = node;
+    var timer = try std.time.Timer.start();
+    defer step.step.result_duration_ns = timer.read();
+
     const b = step.step.owner;
     const self = @fieldParentPtr(AOJ, "step", step);
     const basename = std.fs.path.stem(self.path);
