@@ -20,7 +20,7 @@
 +    s: *Step,
 +    step_stack: *std.AutoArrayHashMapUnmanaged(*Step, void),
 +) !void {
-+    if (!step_stack.contains(s))
++    if (step_stack.contains(s))
 +        return;
 +    try step_stack.put(b.allocator, s, {});
 +    for (s.dependencies.items) |dep|
