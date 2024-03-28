@@ -1,5 +1,6 @@
 const std = @import("std");
 const Step = std.Build.Step;
+const JudgeCase = @import("JudgeCase.zig");
 const JudgeFile = @This();
 
 const base_id: Step.Id = .custom;
@@ -28,22 +29,6 @@ pub fn create(owner: *std.Build, path: []const u8, bin_path: std.Build.LazyPath,
     return self;
 }
 
-fn addJudgeCase(b: *std.Build, self: *JudgeFile, name: []const u8, path: []const u8) !void {
-    const judge = b.addSystemCommand(&.{ "python3", "oi.py" });
-    if (self.kcov) |coverage| {
-        judge.addArg("--kcov");
-        judge.addArg(coverage);
-    }
-    judge.addArg(b.fmt("--bin={s}", .{self.bin_path.getPath(b)}));
-    judge.addArg(try std.fs.path.join(b.allocator, &.{ self.tests, path }));
-    judge.step.name = b.fmt("Case {s}", .{name});
-    judge.step.state = .precheck_done;
-
-    self.step.dependOn(&judge.step);
-    try judge.step.dependants.append(b.allocator, &self.step);
-    try self.add_step.dependants.append(b.allocator, &judge.step);
-}
-
 fn make(step: *Step, prog_node: *std.Progress.Node) !void {
     _ = prog_node;
 
@@ -65,7 +50,12 @@ fn make(step: *Step, prog_node: *std.Progress.Node) !void {
         switch (entry.kind) {
             .directory => {
                 const path = try std.fs.path.join(b.allocator, &.{ sub_dir, basename, entry.name });
-                try addJudgeCase(b, self, entry.name, path);
+                const case = try JudgeCase.create(b, path, self.bin_path.getPath(b), self.tests, self.kcov);
+                case.step.name = b.fmt("Case {s}", .{entry.name});
+                case.step.state = .precheck_done;
+                self.step.dependOn(&case.step);
+                try case.step.dependants.append(b.allocator, &self.step);
+                try self.add_step.dependants.append(b.allocator, &case.step);
             },
             else => {},
         }
