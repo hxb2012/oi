@@ -10,7 +10,7 @@
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_2_B][ITP1_2_B]]  | [[file:ITP1/ITP1_2_B.zig][Range]]                        |
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_2_C][ITP1_2_C]]  | [[file:ITP1/ITP1_2_C.zig][Sorting Three Numbers]]        |
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_2_D][ITP1_2_D]]  | [[file:ITP1/ITP1_2_D.zig][Circle in a Rectangle]]        |
-| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_3_A][ITP1_3_A]]  | Print Many Hello World       |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_3_A][ITP1_3_A]]  | [[file:ITP1/ITP1_3_A.zig][Print Many Hello World]]       |
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_3_B][ITP1_3_B]]  | Print Test Cases             |
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_3_C][ITP1_3_C]]  | Swapping Two Numbers         |
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_3_D][ITP1_3_D]]  | How Many Divisors?           |
