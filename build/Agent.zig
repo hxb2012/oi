@@ -12,9 +12,10 @@ const base_id: Step.Id = .custom;
 step: Step,
 launch_step: Step,
 pool: *Pool,
+tests: []const u8,
 createFn: CreateFn,
 
-pub fn create(owner: *std.Build, pool: *Pool, name: []const u8, createFn: CreateFn) !*Agent {
+pub fn create(owner: *std.Build, pool: *Pool, name: []const u8, tests: []const u8, createFn: CreateFn) !*Agent {
     const self = try owner.allocator.create(Agent);
     self.* = Agent{
         .step = Step.init(.{
@@ -29,6 +30,7 @@ pub fn create(owner: *std.Build, pool: *Pool, name: []const u8, createFn: Create
             .makeFn = launch,
         }),
         .pool = pool,
+        .tests = owner.dupe(tests),
         .createFn = createFn,
     };
 
@@ -38,14 +40,14 @@ pub fn create(owner: *std.Build, pool: *Pool, name: []const u8, createFn: Create
     return self;
 }
 
-fn dirExists(path: []const u8) !bool {
-    var tests = std.fs.cwd().openDir("tests", .{}) catch |err| switch (err) {
+fn dirExists(tests: []const u8, path: []const u8) !bool {
+    var dir = std.fs.cwd().openDir(tests, .{}) catch |err| switch (err) {
         error.FileNotFound => return false,
         else => return err,
     };
-    defer tests.close();
+    defer dir.close();
 
-    var case = tests.openDir(path, .{}) catch |err| switch (err) {
+    var case = dir.openDir(path, .{}) catch |err| switch (err) {
         error.FileNotFound => return false,
         else => return err,
     };
@@ -73,10 +75,10 @@ fn launch(step: *Step, prog_node: *std.Progress.Node) !void {
                 try fetch.step.step.dependants.append(b.allocator, dep);
             }
         } else {
-            const option = if (try dirExists(basepath))
+            const option = if (try dirExists(self.tests, basepath))
                 null
             else
-                try FetchTestCases.create(b, basepath, self.createFn);
+                try FetchTestCases.create(b, self.tests, basepath, self.createFn);
             try map.put(b.allocator, basepath, option);
             if (option) |fetch| {
                 dep.dependOn(&fetch.step.step);

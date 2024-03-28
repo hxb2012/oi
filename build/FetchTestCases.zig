@@ -7,15 +7,17 @@ pub const CreateFn = *const fn (owner: *std.Build, path: []const u8, temp_path: 
 const base_id: Step.Id = .custom;
 
 step: Step,
+tests: []const u8,
 path: []const u8,
 temp_path: ?[]const u8,
 createFn: CreateFn,
 
-pub fn create(owner: *std.Build, path: []const u8, createFn: CreateFn) !*FetchTestCases {
+pub fn create(owner: *std.Build, tests: []const u8, path: []const u8, createFn: CreateFn) !*FetchTestCases {
     const self = try owner.allocator.create(FetchTestCases);
     try self.step.initAllocated(owner, owner.fmt("Fetch Testcases of {s}", .{path}));
     self.step.startFn = start;
     self.step.checkFn = check;
+    self.tests = owner.dupe(tests);
     self.path = owner.dupe(path);
     self.temp_path = null;
     self.createFn = createFn;
@@ -25,7 +27,7 @@ pub fn create(owner: *std.Build, path: []const u8, createFn: CreateFn) !*FetchTe
 fn check(step: *Step, node: *std.Progress.Node) !void {
     _ = node;
     const self = @fieldParentPtr(FetchTestCases, "step", step);
-    var tests = try std.fs.cwd().makeOpenPath("tests", .{});
+    var tests = try std.fs.cwd().makeOpenPath(self.tests, .{});
     defer tests.close();
     const dirname = std.fs.path.dirname(self.path).?;
     var dir = try tests.makeOpenPath(dirname, .{});

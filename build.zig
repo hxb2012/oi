@@ -9,6 +9,7 @@ const AOJ = @import("build/AOJ.zig");
 const Options = struct {
     no_judge: bool,
     translate: bool,
+    tests: []const u8,
     kcov: ?[]const u8,
     module: *std.Build.Module,
     fmt: *std.Build.Step,
@@ -87,8 +88,8 @@ fn addJudge(b: *std.Build, path: []const u8, config: *const OnlineJudge, options
     c_compile.addCSourceFile(.{ .file = .{ .path = c_path }, .flags = &[_][]const u8{ "-Wall", "-Wextra" } });
     c_compile.step.name = b.fmt("Compile {s}", .{c_path});
 
-    const zig_judge = try JudgeFile.create(b, path, zig_compile.getEmittedBin(), options.kcov, config.agent);
-    const c_judge = try JudgeFile.create(b, c_path, c_compile.getEmittedBin(), null, config.agent);
+    const zig_judge = try JudgeFile.create(b, path, zig_compile.getEmittedBin(), options.tests, options.kcov, config.agent);
+    const c_judge = try JudgeFile.create(b, c_path, c_compile.getEmittedBin(), options.tests, null, config.agent);
 
     if (options.translate) {
         const zig_step = b.step(path, "Translate file");
@@ -176,7 +177,7 @@ fn addSubdir(b: *std.Build, path: []const u8, config: *const OnlineJudge, option
 
 fn addConfig(b: *std.Build, config: *const Config, options: *const Options) !*std.Build.Step {
     const pool = if (config.pool) |p| p else try Pool.create(b, b.fmt("{s} fetch pool", .{config.name}));
-    const agent = try Agent.create(b, pool, b.fmt("{s} agent", .{config.name}), config.createFn);
+    const agent = try Agent.create(b, pool, b.fmt("{s} agent", .{config.name}), options.tests, config.createFn);
     var online_judge: OnlineJudge = .{
         .target = config.target,
         .agent = &agent.step,
@@ -197,6 +198,7 @@ pub fn build(b: *std.Build) !void {
     const options: Options = .{
         .translate = translate,
         .no_judge = no_judge,
+        .tests = "tests",
         .kcov = if (kcov) coverage else null,
         .module = module,
         .fmt = fmt_step,

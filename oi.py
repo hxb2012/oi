@@ -3,11 +3,11 @@
 import os
 from subprocess import run
 
-def judge(path, kcov, bin, testcase):
+def judge(path, kcov, bin):
     assert bin is not None
-    path = os.path.splitext(path)[0]
+    # path = os.path.splitext(path)[0]
 
-    filename = os.path.join("tests", path, testcase)
+    filename = path
     with open(os.path.join(filename, "in"), "rb") as b:
         input = b.read()
     with open(os.path.join(filename, "out"), "rb") as b:
@@ -15,7 +15,7 @@ def judge(path, kcov, bin, testcase):
 
     command = [bin]
     if kcov:
-        dirname = os.path.join(kcov, path, testcase)
+        dirname = os.path.join(kcov, path)
         os.makedirs(dirname, exist_ok=True)
         command = ['kcov', "--exclude-path=/opt,/usr", dirname] + command
 
@@ -29,9 +29,8 @@ def main():
     parser.add_argument('--kcov')
     parser.add_argument('--bin')
     parser.add_argument('path')
-    parser.add_argument('testcase')
     args = parser.parse_args()
-    judge(args.path, args.kcov, args.bin, args.testcase)
+    judge(args.path, args.kcov, args.bin)
 
 if __name__ == '__main__':
     main()
