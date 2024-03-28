@@ -13,7 +13,7 @@
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_3_A][ITP1_3_A]]  | [[file:ITP1/ITP1_3_A.zig][Print Many Hello World]]       |
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_3_B][ITP1_3_B]]  | [[file:ITP1/ITP1_3_B.zig][Print Test Cases]]             |
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_3_C][ITP1_3_C]]  | [[file:ITP1/ITP1_3_C.zig][Swapping Two Numbers]]         |
-| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_3_D][ITP1_3_D]]  | How Many Divisors?           |
+| [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_3_D][ITP1_3_D]]  | [[file:ITP1/ITP1_3_D.zig][How Many Divisors?]]           |
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_4_A][ITP1_4_A]]  | A / B Problem                |
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_4_B][ITP1_4_B]]  | Circle                       |
 | [[https://onlinejudge.u-aizu.ac.jp/courses/lesson/2/ITP1/1/ITP1_4_C][ITP1_4_C]]  | Simple Calculator            |
