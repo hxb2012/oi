@@ -47,7 +47,6 @@ fn make(step: *Step, prog_node: *std.Progress.Node) !void {
         try argv.append(b.allocator, "kcov");
         try argv.append(b.allocator, "--exclude-path=/opt,/usr");
         const path = try std.fs.path.join(b.allocator, &.{ coverage, self.path });
-        defer b.allocator.free(path);
         try std.fs.cwd().makePath(path);
         try argv.append(b.allocator, path);
     }
