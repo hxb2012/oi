@@ -11,6 +11,7 @@ const Options = struct {
     translate: bool,
     kcov: ?[]const u8,
     module: *std.Build.Module,
+    fmt: *std.Build.Step,
 };
 
 const Config = struct {
@@ -49,7 +50,7 @@ fn addCmin(b: *std.Build, cross_target: std.zig.CrossTarget) !*std.Build.Step.Ru
     return cmin;
 }
 
-fn addFile(b: *std.Build, path: []const u8, config: *const OnlineJudge, options: *const Options) !*std.Build.Step {
+fn addJudge(b: *std.Build, path: []const u8, config: *const OnlineJudge, options: *const Options) !*std.Build.Step {
     const sub_dir = std.fs.path.dirname(path).?;
     const basename = std.fs.path.stem(path);
 
@@ -119,6 +120,32 @@ fn addFile(b: *std.Build, path: []const u8, config: *const OnlineJudge, options:
     return judge_step;
 }
 
+fn addFmt(b: *std.Build, path: []const u8, options: *const Options) !void {
+    const paths = try b.allocator.create([1][]const u8);
+    paths.* = [_][]const u8{b.pathFromRoot(path)};
+    const fmt = b.addFmt(.{ .check = true, .paths = paths });
+    fmt.step.name = b.fmt("fmt {s}", .{path});
+    options.fmt.dependOn(&fmt.step);
+}
+
+fn addFmtDir(b: *std.Build, path: []const u8, options: *const Options) !void {
+    var dir = try std.fs.cwd().openIterableDir(path, .{});
+    defer dir.close();
+
+    var walker = try dir.walk(b.allocator);
+    while (try walker.next()) |entry| {
+        switch (entry.kind) {
+            .file => {
+                if (std.mem.eql(u8, std.fs.path.extension(entry.basename), ".zig")) {
+                    const sub_path = try std.fs.path.join(b.allocator, &.{ path, entry.path });
+                    try addFmt(b, sub_path, options);
+                }
+            },
+            else => {},
+        }
+    }
+}
+
 fn addSubdir(b: *std.Build, path: []const u8, config: *const OnlineJudge, options: *const Options) !*std.Build.Step {
     var dir = try std.fs.cwd().openIterableDir(path, .{});
     defer dir.close();
@@ -135,7 +162,8 @@ fn addSubdir(b: *std.Build, path: []const u8, config: *const OnlineJudge, option
             .file => {
                 if (std.mem.eql(u8, std.fs.path.extension(entry.name), ".zig")) {
                     const sub_path = try std.fs.path.join(b.allocator, &.{ path, entry.name });
-                    const file_step = try addFile(b, sub_path, config, options);
+                    const file_step = try addJudge(b, sub_path, config, options);
+                    try addFmt(b, sub_path, options);
                     step.dependOn(file_step);
                 }
             },
@@ -162,6 +190,7 @@ pub fn build(b: *std.Build) !void {
     const no_judge = b.option(bool, "no-judge", "Disable judge") orelse false;
     const kcov = b.option(bool, "kcov", "run Kcov") orelse false;
     const module = b.addModule("oi", .{ .source_file = .{ .path = "src/main.zig" } });
+    const fmt_step = b.step("fmt", "Format");
 
     const coverage: []const u8 = "coverage";
 
@@ -170,7 +199,15 @@ pub fn build(b: *std.Build) !void {
         .no_judge = no_judge,
         .kcov = if (kcov) coverage else null,
         .module = module,
+        .fmt = fmt_step,
     };
+
+    const src_files = [_][]const u8{ "build.zig", "main.zig", "tests.zig" };
+    for (src_files) |file|
+        try addFmt(b, file, &options);
+    const src_dirs = [_][]const u8{ "src", "build" };
+    for (src_dirs) |file|
+        try addFmtDir(b, file, &options);
 
     const judge_step = b.step("judge", "Judge all");
 
@@ -202,6 +239,10 @@ pub fn build(b: *std.Build) !void {
     }
 
     test_step.dependOn(judge_step);
+
+    const regression_step = b.step("regression", "Regression");
+    regression_step.dependOn(fmt_step);
+    regression_step.dependOn(test_step);
 }
 
 pub const main = @import("build/main.zig").main;
