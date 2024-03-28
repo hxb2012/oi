@@ -14,8 +14,9 @@ jobs:
       id: cache-tests
       uses: actions/cache@v4
       with:
-        path: tests/**/*.zip
+        path: tests/**/*
         key: tests
+        save-always: true
     - uses: actions/setup-python@v5
       with:
         python-version: '3.11'

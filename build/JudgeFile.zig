@@ -27,7 +27,7 @@ pub fn create(owner: *std.Build, path: []const u8, bin_path: std.Build.LazyPath,
 }
 
 fn addJudgeCase(b: *std.Build, self: *JudgeFile, name: []const u8) !void {
-    const judge = b.addSystemCommand(&.{ "python3", "oi.py", "judge" });
+    const judge = b.addSystemCommand(&.{ "python3", "oi.py" });
     if (self.kcov) |coverage| {
         judge.addArg("--kcov");
         judge.addArg(coverage);

@@ -2,6 +2,9 @@ const std = @import("std");
 const RemoveFile = @import("build/RemoveFile.zig");
 const MakePath = @import("build/MakePath.zig");
 const JudgeFile = @import("build/JudgeFile.zig");
+const Pool = @import("build/Pool.zig");
+const Agent = @import("build/Agent.zig");
+const AOJ = @import("build/AOJ.zig");
 
 const Options = struct {
     no_judge: bool,
@@ -13,10 +16,13 @@ const Options = struct {
 const Config = struct {
     name: []const u8,
     target: std.zig.CrossTarget,
+    createFn: Agent.CreateFn,
+    pool: ?*Pool = null,
 };
 
 const OnlineJudge = struct {
     target: std.zig.CrossTarget,
+    agent: *std.Build.Step,
 };
 
 fn addTranslate(b: *std.Build, path: []const u8, target: std.zig.CrossTarget, module: *std.Build.Module) !*std.Build.Step.Compile {
@@ -80,11 +86,8 @@ fn addFile(b: *std.Build, path: []const u8, config: *const OnlineJudge, options:
     c_compile.addCSourceFile(.{ .file = .{ .path = c_path }, .flags = &[_][]const u8{ "-Wall", "-Wextra" } });
     c_compile.step.name = b.fmt("Compile {s}", .{c_path});
 
-    const fetch = b.addSystemCommand(&.{ "python3", "oi.py", "fetch", path });
-    fetch.step.name = "fetch testcase";
-
-    const zig_judge = try JudgeFile.create(b, path, zig_compile.getEmittedBin(), options.kcov, &fetch.step);
-    const c_judge = try JudgeFile.create(b, c_path, c_compile.getEmittedBin(), null, &fetch.step);
+    const zig_judge = try JudgeFile.create(b, path, zig_compile.getEmittedBin(), options.kcov, config.agent);
+    const c_judge = try JudgeFile.create(b, c_path, c_compile.getEmittedBin(), null, config.agent);
 
     if (options.translate) {
         const zig_step = b.step(path, "Translate file");
@@ -144,8 +147,11 @@ fn addSubdir(b: *std.Build, path: []const u8, config: *const OnlineJudge, option
 }
 
 fn addConfig(b: *std.Build, config: *const Config, options: *const Options) !*std.Build.Step {
+    const pool = if (config.pool) |p| p else try Pool.create(b, b.fmt("{s} fetch pool", .{config.name}));
+    const agent = try Agent.create(b, pool, b.fmt("{s} agent", .{config.name}), config.createFn);
     var online_judge: OnlineJudge = .{
         .target = config.target,
+        .agent = &agent.step,
     };
     online_judge.target.ofmt = .c;
     return try addSubdir(b, config.name, &online_judge, options);
@@ -167,9 +173,11 @@ pub fn build(b: *std.Build) !void {
     };
 
     const judge_step = b.step("judge", "Judge all");
+
     const configs = [_]Config{.{
         .name = "AOJ",
         .target = .{ .cpu_arch = .x86_64, .os_tag = .linux },
+        .createFn = AOJ.create,
     }};
 
     for (configs) |config|
